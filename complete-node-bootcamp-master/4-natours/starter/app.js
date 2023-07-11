@@ -1,15 +1,16 @@
 const fs = require('fs');
 const express = require('express');
-
+const morgan = require('morgan');
 const app = express();
 
+app.use(morgan('dev'));
 app.use(express.json());
 
 const toursJSON = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
 
-app.get('/api/v1/tours', (req, res) => {
+const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'succcess',
     result: toursJSON.length,
@@ -17,9 +18,9 @@ app.get('/api/v1/tours', (req, res) => {
       tours: toursJSON,
     },
   });
-});
+};
 
-app.get('/api/v1/tours/:id', (req, res) => {
+const getTourByID = (req, res) => {
   const id = req.params.id * 1;
   const tour = toursJSON.find((el) => el.id === id);
 
@@ -36,9 +37,9 @@ app.get('/api/v1/tours/:id', (req, res) => {
       tour,
     },
   });
-});
+};
 
-app.post('/api/v1/tours', (req, res) => {
+const createNewTour = (req, res) => {
   const newId = toursJSON[toursJSON.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
   toursJSON.push(newTour);
@@ -55,7 +56,10 @@ app.post('/api/v1/tours', (req, res) => {
       });
     }
   );
-});
+};
+
+app.route('/api/v1/tours').get(getAllTours).post(createNewTour);
+app.route('/api/v1/tours/:id').get(getTourByID);
 
 const port = 3000;
 app.listen(port, () => {
