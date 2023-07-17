@@ -1,6 +1,6 @@
-const fs = require('fs');
+const Tour = require('../models/tourModel');
 
-const filePath = `${__dirname}/../dev-data/data/tours-simple.json`;
+/* const filePath = `${__dirname}/../dev-data/data/tours-simple.json`;
 
 const toursJSON = JSON.parse(fs.readFileSync(filePath));
 let tour;
@@ -19,8 +19,8 @@ exports.checkId = (req, res, next, val) => {
   }
   next();
 };
-
-exports.checkBody = (req, res, next) => {
+ */
+/* exports.checkBody = (req, res, next) => {
   if (!req.body.name || !req.body.price) {
     return res.status(400).json({
       status: 'fail',
@@ -29,15 +29,11 @@ exports.checkBody = (req, res, next) => {
   }
   next();
 };
-
+ */
 exports.getAllTours = (req, res) => {
   res.status(200).json({
     status: 'succcess',
-    result: toursJSON.length,
     requestedAt: req.requestTime,
-    data: {
-      tours: toursJSON,
-    },
   });
 };
 
@@ -45,18 +41,13 @@ exports.getTour = (req, res) => {
   res.status(200).json({
     status: 'succcess',
     requestedAt: req.requestTime,
-    data: {
-      tour,
-    },
   });
 };
 
-exports.createTour = (req, res) => {
-  const newId = toursJSON[toursJSON.length - 1].id + 1;
-  const newTour = Object.assign({ id: newId }, req.body);
-  toursJSON.push(newTour);
+exports.createTour = async (req, res) => {
+  try {
+    const newTour = await Tour.create(req.body);
 
-  fs.writeFile(filePath, JSON.stringify(toursJSON), (err) => {
     res.status(201).json({
       status: 'success',
       requestedAt: req.requestTime,
@@ -64,16 +55,18 @@ exports.createTour = (req, res) => {
         tour: newTour,
       },
     });
-  });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err,
+    });
+  }
 };
 
 exports.updateTour = (req, res) => {
   res.status(200).json({
     status: 'succcess',
     requestedAt: req.requestTime,
-    data: {
-      tour,
-    },
   });
 };
 
