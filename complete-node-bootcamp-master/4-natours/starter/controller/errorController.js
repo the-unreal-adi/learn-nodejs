@@ -1,3 +1,17 @@
+const AppError = require('../utils/appError');
+
+const handleCastErrorDB = (err) => {
+  const message = `Invalid ${err.path}: ${err.value}`;
+  return new AppError(message, 400);
+};
+
+const handleDuplicateFieldErrorDB = (err) => {
+  const message = `Duplicate field value: ${err.keyValue.name}`;
+  return new AppError(message, 400);
+};
+
+const handleValidationErrorDB = (err) => new AppError(err.message, 400);
+
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     error: err,
@@ -29,7 +43,14 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
-    sendErrorProd(err, res);
+    let error = Object.assign(err);
+
+    if (error.name === 'CastError') error = handleCastErrorDB(error);
+    if (error.code === 11000) error = handleDuplicateFieldErrorDB(error);
+    if (error.name === 'ValidationError')
+      error = handleValidationErrorDB(error);
+
+    sendErrorProd(error, res);
   }
 
   next();
