@@ -1,3 +1,4 @@
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
@@ -14,6 +15,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     confirmPassword: req.body.confirmPassword,
+    passwordChangedAt: req.body.passwordChangedAt,
   });
 
   const token = signToken(newUser._id);
@@ -66,6 +68,23 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   if (!token) {
     return next(new AppError('User not logged in', 401));
+  }
+
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  const freshUser = await User.findById(decoded.id);
+
+  if (!freshUser) {
+    return next(new AppError('User does not exist', 401));
+  }
+
+  if (freshUser.passwordChanged(decoded.iat)) {
+    return next(
+      new AppError(
+        'Session expired due to password change. Please login again',
+        401,
+      ),
+    );
   }
   next();
 });

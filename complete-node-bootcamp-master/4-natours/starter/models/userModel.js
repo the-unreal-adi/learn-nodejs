@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
       message: 'Password mismatch',
     },
   },
+  passwordChangedAt: Date,
 });
 
 userSchema.pre('save', async function (next) {
@@ -49,6 +50,19 @@ userSchema.methods.verifyPassword = async function (
   userPassword,
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.passwordChanged = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const passwordChangedTS = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
+
+    return JWTTimestamp < passwordChangedTS;
+  }
+
+  return false;
 };
 
 const User = mongoose.model('User', userSchema);
