@@ -15,7 +15,6 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     confirmPassword: req.body.confirmPassword,
-    passwordChangedAt: req.body.passwordChangedAt,
   });
 
   const token = signToken(newUser._id);
@@ -72,13 +71,13 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  const freshUser = await User.findById(decoded.id);
+  const currentUser = await User.findById(decoded.id);
 
-  if (!freshUser) {
+  if (!currentUser) {
     return next(new AppError('User does not exist', 401));
   }
 
-  if (freshUser.passwordChanged(decoded.iat)) {
+  if (currentUser.passwordChanged(decoded.iat)) {
     return next(
       new AppError(
         'Session expired due to password change. Please login again',
@@ -86,5 +85,36 @@ exports.protect = catchAsync(async (req, res, next) => {
       ),
     );
   }
+
+  req.user = currentUser;
+
   next();
 });
+
+exports.restrictTo =
+  (...roles) =>
+  (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError(
+          'You do not have necessary permissions to perform this action',
+          403,
+        ),
+      );
+    }
+    next();
+  };
+
+exports.forgetPassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return next(new AppError('User does not exist', 404));
+  }
+
+  const resetToken = user.createPasswordResetToken();
+
+  await user.save({ validateBeforeSave: false });
+});
+
+exports.resetPassword = (req, res, next) => {};
