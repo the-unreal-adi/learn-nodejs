@@ -12,7 +12,17 @@ router.patch('/resetPassword/:token', authController.resetPassword);
 router.patch(
   '/changePasswordSelf',
   authController.protect,
-  authController.changePassword,
+  authController.changePasswordSelf,
+);
+router.patch(
+  '/updateUserSelf',
+  authController.protect,
+  userController.updateUserSelf,
+);
+router.delete(
+  '/deleteUserSelf',
+  authController.protect,
+  userController.deleteUserSelf,
 );
 
 router
