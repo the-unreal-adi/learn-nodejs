@@ -11,6 +11,19 @@ const signToken = (id) =>
     expiresIn: process.env.JWT_EXPIRATION,
   });
 
+const sendCookie = (token, res) => {
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRATION * 60 * 1000,
+    ),
+    httpOnly: true,
+  };
+
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+  res.cookie('jwt', token, cookieOptions);
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
@@ -20,6 +33,9 @@ exports.signup = catchAsync(async (req, res, next) => {
   });
 
   const token = signToken(newUser._id);
+
+  sendCookie(token, res);
+  newUser.password = undefined;
 
   res.status(201).json({
     status: 'success',
@@ -50,6 +66,8 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   const token = signToken(user._id);
+
+  sendCookie(token, res);
 
   res.status(200).json({
     status: 'success',
