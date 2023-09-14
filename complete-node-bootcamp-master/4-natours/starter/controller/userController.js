@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const factory = require('./handlerFactory');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -11,17 +12,12 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
-exports.getAllUsers = catchAsync(async (req, res) => {
-  const user = await User.find();
-  res.status(200).json({
-    status: 'succcess',
-    result: user.length,
-    requestedAt: req.requestTime,
-    data: {
-      user,
-    },
-  });
-});
+exports.getAllUsers = factory.getAllDocs(User);
+
+exports.getSelf = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
 
 exports.updateUserSelf = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.confirmPassword) {
@@ -61,27 +57,14 @@ exports.deleteUserSelf = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'undefined route!',
-  });
-};
+exports.getUser = factory.getSingleDoc(User);
+
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'error',
-    message: 'undefined route!',
+    message: 'Use /api/v1/signup',
   });
 };
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'undefined route!',
-  });
-};
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'undefined route!',
-  });
-};
+exports.updateUser = factory.updateSingleDoc(User);
+
+exports.deleteUser = factory.deleteSingleDoc(User);
