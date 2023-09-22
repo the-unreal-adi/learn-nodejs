@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -10,6 +11,7 @@ const tourSchema = new mongoose.Schema(
       maxlength: [40, 'A tour name must not have more than 40 characters'],
       minlength: [10, 'A tour name must not have less than 10 characters'],
     },
+    slug: String,
     duration: {
       type: Number,
       required: [true, 'A tour must have duration'],
@@ -98,6 +100,7 @@ const tourSchema = new mongoose.Schema(
 );
 
 tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
 
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
@@ -107,6 +110,11 @@ tourSchema.virtual('reviews', {
   ref: 'Review',
   foreignField: 'tour',
   localField: '_id',
+});
+
+tourSchema.pre('save', function (next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
 });
 
 tourSchema.pre(/^find/, function (next) {
